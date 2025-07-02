@@ -79,7 +79,14 @@ const deleteMutation = useMutation({
   const handleDelete = async (id) => {
    deleteMutation.mutate(id);
   };
-     if (isLoading) return <p>Loading...</p>;
+    if (isLoading) {
+  return (
+    <div className="flex items-center justify-center h-40">
+      <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-blue-500 border-solid"></div>
+      <span className="ml-2 text-blue-500 font-medium">Loading...</span>
+    </div>
+  );
+}
   if (isError) return <p>Error: {error.message}</p>;
  
   return (
