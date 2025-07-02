@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { getjob, createjob, deletejob } from "../Api/jobapi";
 import Button from "../components/Button";
+import { useQuery,useMutation, useQueryClient } from '@tanstack/react-query';
 
 const Home = () => {
   const [step, setStep] = useState(1);
-  const [job, setJob] = useState([]);
+  
 
   // Step 1 fields
   const [jobtitle, setJobTitle] = useState("");
@@ -21,17 +22,31 @@ const Home = () => {
   const [totalEmployee, setTotalEmployee] = useState("");
   const [applyType, setApplyType] = useState("quick");
 
-  const fetchJob = async () => {
-    const res = await getjob();
-    setJob(res.data);
-  };
+  
+   const { data, isLoading, isError, error } = useQuery({
+    queryKey: ['job'], // Unique key
+    queryFn: getjob,
+  });
 
-  useEffect(() => {
-    fetchJob();
-  }, []);
+
+  const queryClient = useQueryClient();
+const createMutation = useMutation({
+  mutationFn: createjob,
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['job'] });
+  },
+});
+
+const deleteMutation = useMutation({
+  mutationFn: deletejob,
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['job'] });
+  },
+});
+
 
   const handleSubmit = async () => {
-    await createjob({
+    createMutation.mutate({
       jobtitle,
       companyname,
       industry,
@@ -58,14 +73,15 @@ const Home = () => {
     setTotalEmployee("");
     setApplyType("quick");
     setStep(1);
-    fetchJob();
   };
 
+  
   const handleDelete = async (id) => {
-    await deletejob(id);
-    fetchJob();
+   deleteMutation.mutate(id);
   };
-
+     if (isLoading) return <p>Loading...</p>;
+  if (isError) return <p>Error: {error.message}</p>;
+ 
   return (
     <div className="flex flex-col items-center min-h-screen bg-gray-50 px-4 py-8">
       {/* Form Box */}
@@ -254,10 +270,10 @@ const Home = () => {
 
       {/* Job Cards Section */}
       <div className="w-full max-w-3xl mt-10 space-y-6">
-        {job.length === 0 ? (
+        {Array.isArray(data) && data.length === 0  ? (
           <p className="text-center text-gray-500">No Jobs Found</p>
         ) : (
-          job.map((job) => (
+          data?.map((job) => (
             <div
               key={job.id}
               className="bg-white rounded-lg shadow p-6 flex flex-col gap-2 border border-gray-200"
